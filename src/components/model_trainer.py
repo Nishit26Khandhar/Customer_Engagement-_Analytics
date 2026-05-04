@@ -249,7 +249,7 @@ class ModelTrainer:
             logging.info(f"Mean CV F1       : {cv_scores.mean():.4f}")
             logging.info("=" * 55)
 
-            # BUG 5 FIX: "No Attrition"/"Attrition" → "Retained"/"Churned"
+           
             report = classification_report(
                 y_test, predicted,
                 target_names=["Retained", "Churned"]

@@ -58,16 +58,7 @@ class DataIngestion:
             df.drop(columns=["CustomerId", "Surname", "RowNumber"],
                     inplace=True, errors="ignore")
 
-            # ── BUG 8 FIX: Replace assert with explicit ValueError ─────────────
-            # `assert` raises AssertionError, which is a BaseException subclass.
-            # CustomException wraps `Exception`, so AssertionError propagates
-            # UNCAUGHT past the except block in this method and crashes the
-            # entire pipeline with a raw traceback instead of a formatted
-            # CustomException message. Using explicit if/raise ValueError
-            # ensures the error is caught, wrapped, and logged properly.
-            #
-            # Was:
-            #   assert df[col].isin([0, 1]).all(), f"Non-binary values in '{col}'"
+           
             for col in ["HasCrCard", "IsActiveMember", "Exited"]:
                 non_binary = ~df[col].isin([0, 1])
                 if non_binary.any():

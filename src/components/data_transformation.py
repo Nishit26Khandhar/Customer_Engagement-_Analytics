@@ -7,16 +7,6 @@ from dataclasses import dataclass
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
 
-# BUG 4 FIX: Removed SMOTE import from here.
-# Previously SMOTE was applied here before returning train_array to model_trainer.
-# model_trainer then passed that pre-SMOTEd array into evaluate_models → RandomizedSearchCV.
-# RandomizedSearchCV split that SMOTE-balanced array into train/validation folds,
-# meaning EACH validation fold also contained synthetic samples that were generated
-# FROM the training fold data. This is data leakage — CV scores were artificially
-# inflated by ~0.10–0.15 (observed: CV F1=0.78 vs real test Macro F1=0.63).
-#
-# SMOTE now lives inside ImbPipeline in utils.py/evaluate_models(), so it only
-# fires on the training portion of each fold. Validation folds stay clean.
 
 from src.exception import CustomException
 from src.logger import logging
@@ -190,11 +180,7 @@ class DataTransformation:
                 input_feature_test[numeric_present]
             )
 
-            # ── BUG 4 FIX: No SMOTE here ─────────────────────────────────────
-            # train_array is returned RAW (imbalanced). SMOTE is now applied
-            # inside ImbPipeline in evaluate_models() (utils.py) so that each
-            # CV fold generates its own synthetic samples only from training
-            # data, never contaminating validation folds.
+           
             train_array = np.c_[
                 input_feature_train.values,
                 np.array(target_train)

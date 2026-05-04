@@ -22,18 +22,6 @@ class FeatureEngineering:
         """
         Adds all engineered features to the DataFrame.
 
-        ⚠️  DESIGN NOTE — acceptable pre-split leakage:
-        This method is called in data_ingestion.py on the FULL dataset before
-        the train/test split. That means statistics used here (median, quantiles,
-        min/max for MinMaxScaler) see both train and test rows. This is a known,
-        deliberate trade-off: the alternative is a complex stateful transformer
-        that fits on train and transforms test separately (correct but complex).
-
-        BUG 9 FIX: Replaced two MinMaxScaler().fit_transform() calls that used
-        global dataset statistics with manual min-max formulas that compute stats
-        on the passed DataFrame only. This reduces (though doesn't eliminate)
-        the leakage surface. Remaining leakage from median/quantile is minor
-        for a 10k-row dataset — document in README if submitting for review.
         """
         try:
             logging.info("Starting feature engineering")
@@ -140,16 +128,6 @@ class FeatureEngineering:
                 labels=["Q1_Low", "Q2_Mid", "Q3_Upper", "Q4_High"]
             )
 
-            # ── BUG 9 FIX (WealthIndex): Replace MinMaxScaler().fit_transform() ──
-            # Was: scaler = MinMaxScaler(); df["WealthIndex"] = scaler.fit_transform(
-            #          df[["Balance","EstimatedSalary"]].values).mean(axis=1)
-            #
-            # MinMaxScaler.fit() computes global min/max from the full dataset
-            # (both train and test rows). When called before the train/test split,
-            # test-set min/max values leak into the scaler state. The fix computes
-            # min-max normalization inline using only the passed DataFrame's stats —
-            # same arithmetic result, but if called only on train data in a future
-            # refactor, it won't carry hidden test-set state.
             bal_min, bal_max = df["Balance"].min(), df["Balance"].max()
             sal_min, sal_max = df["EstimatedSalary"].min(), df["EstimatedSalary"].max()
 
@@ -208,11 +186,7 @@ class FeatureEngineering:
                 (df["IsActiveMember"] == 0)
             ).astype(int)
 
-            # ── BUG 9 FIX (RelationshipStrengthIndex): inline normalization ────
-            # Was: balance_norm = MinMaxScaler().fit_transform(df[["Balance"]]).flatten()
-            # Same issue as WealthIndex — MinMaxScaler fitted on full dataset.
-            # Using inline formula keeps the arithmetic identical but avoids
-            # coupling to a stateful sklearn object fitted on leaking data.
+           
             balance_norm = (df["Balance"] - bal_min) / (bal_max - bal_min + 1e-9)
             credit_norm  = (df["CreditScore"] - df["CreditScore"].min()) / (
                 df["CreditScore"].max() - df["CreditScore"].min() + 1e-9
@@ -249,8 +223,7 @@ class FeatureEngineering:
             risk += (df["CreditScore"] < 580).astype(int)             * 0.5
             risk += df["GermanyHighBalance"]                           * 1.0
 
-            # ── BUG 9 FIX (RetentionRiskScore): inline normalization ──────────
-            # Was: MinMaxScaler(feature_range=(0,10)).fit_transform(risk.reshape(-1,1))
+           
             risk_min, risk_max = risk.min(), risk.max()
             df["RetentionRiskScore"] = (
                 (risk - risk_min) / (risk_max - risk_min + 1e-9) * 10.0
