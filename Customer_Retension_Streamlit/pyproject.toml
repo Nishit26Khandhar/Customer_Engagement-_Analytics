@@ -4,8 +4,16 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["streamlit",
+dependencies = [ "streamlit",
     "plotly",
     "pandas",
     "numpy",
-    "scikit-learn",]
+    "scikit-learn",
+    "matplotlib",
+    "seaborn",
+    "xgboost",
+    "shap",
+    "catboost",
+    "imbalanced-learn",
+    "scipy",
+    "dill",]
